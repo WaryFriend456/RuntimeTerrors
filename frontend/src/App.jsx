@@ -1,35 +1,47 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { Button } from "@/components/ui/button"
+import Navbar from '@/components/views/Navbar'
+import LoginSignup from '@/components/views/LoginSignup'
+import { ThemeProvider } from "./components/ui/theme-provider"
+import { AnimatedPage } from "./components/motion/animated-page"
+import { AnimatePresence } from "framer-motion"
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './components/views/Dashboard';
+import Profile from './components/views/Profile';
+import About from './components/views/About';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-background">
+            <Navbar />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<LoginSignup />} />
+              <Route path="/about" element={<About />} />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
+              
+              {/* Redirect root to dashboard or login based on auth status */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              
+              {/* Catch all - redirect to dashboard or login */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
