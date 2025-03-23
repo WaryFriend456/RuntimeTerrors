@@ -43,7 +43,9 @@ async def summarize_articles(request: ArticleSummaryRequest):
         aggregated_articles = "\n\n".join(request.articles)
         
         # Call the summarization function
+        # print(f"Aggregated Articles: {aggregated_articles}")
         summary = summarise_text(aggregated_articles, request.domain)
+        print(f"Summary: {summary}")
         
         return ArticleSummaryResponse(summary=summary)
     except Exception as e:

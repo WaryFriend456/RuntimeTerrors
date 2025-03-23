@@ -77,7 +77,7 @@ Your goal is to provide a clear, concise summary that begins directly with the m
 
 def fetch_articles_and_domain():
     # Connect to MongoDB using the provided connection string
-    mongo_uri = "mongodb+srv://KushalBang:Kushal456@cluster0.8ygxent.mongodb.net/runtimeterrors"
+    mongo_uri = os.getenv("MONGO_URI")
     mongo_client = MongoClient(mongo_uri)
     db = mongo_client["runtimeterrors"]
     articles_collection = db.articles

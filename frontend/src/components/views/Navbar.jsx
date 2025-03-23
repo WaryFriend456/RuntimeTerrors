@@ -48,11 +48,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           {/* Logo and brand */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
+            {/* <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">cA</span>
-            </div>
+            </div> */}
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600">
-              curateAI
+              curate.ai
             </span>
           </Link>
           

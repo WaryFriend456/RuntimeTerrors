@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 // Route imports
 const authRoutes = require('./routes/auth');
 const articleRoutes = require('./routes/articles');
+const chatbotRoutes = require('./routes/chatbot'); // Add this line
 
 // Create Express app
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.json());
 // Route middleware
 app.use('/api/auth', authRoutes);
 app.use('/api/articles', articleRoutes);
+app.use('/api/chatbot', chatbotRoutes); // Add this line
 
 // Default route
 app.get('/', (req, res) => {

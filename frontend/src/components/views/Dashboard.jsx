@@ -2,17 +2,20 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button"; // Add Button import
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Skeleton } from "../ui/skeleton";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom"; // Add navigate import
 
 export default function Dashboard() {
     const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("foryou");
     const { user, token } = useAuth();
+    const navigate = useNavigate(); // Add navigate hook
     
     // Get interests directly from user object, with fallback to defaults
     const userInterests = user?.interests || [];
@@ -95,7 +98,15 @@ export default function Dashboard() {
 
     return (
         <div className="container mx-auto py-6 max-w-6xl">
-            <h1 className="text-3xl font-bold mb-6">Your News Feed</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold">Your News Feed</h1>
+                <Button 
+                    onClick={() => navigate("/chatbot")}
+                    className="bg-primary hover:bg-primary/90"
+                >
+                    Explore More
+                </Button>
+            </div>
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
                 <TabsList className="mb-4 overflow-x-auto flex whitespace-nowrap">

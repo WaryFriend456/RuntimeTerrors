@@ -13,6 +13,7 @@ import Dashboard from './components/views/Dashboard';
 import Profile from './components/views/Profile';
 import About from './components/views/About';
 import UserInterests from '@/components/views/UserInterests'
+import Chatbot from './components/views/Chatbot'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/interests" element={<UserInterests />} />
+                <Route path="/chatbot" element={<Chatbot />} />
               </Route>
               
               {/* Redirect root to dashboard or login based on auth status */}

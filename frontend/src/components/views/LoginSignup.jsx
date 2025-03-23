@@ -287,7 +287,7 @@ const LoginSignup = () => {
           >
             <Sparkles className="h-6 w-6 text-blue-400" />
             <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400">
-              curateAI
+              curate.ai
             </h2>
           </motion.div>
           
@@ -297,7 +297,7 @@ const LoginSignup = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            Your personalized AI content curator
+            Your personalized AI news curator
           </motion.p>
         </MotionCardHeader>
         

@@ -114,23 +114,32 @@ router.post('/refresh', authenticateToken, async (req, res) => {
         continue;
       }
 
-      // Process and save each article, checking for duplicates by URL
+      // Process and save each article, using upsert to handle duplicates
       let savedCount = 0;
       for (const article of newArticles) {
-        // Check if article already exists by URL
-        const exists = await Article.findOne({ url: article.url });
-        if (!exists) {
-          const newArticle = new Article({
-            interest,
-            title: article.title,
-            source: article.source,
-            url: article.url,
-            content: article.content,
-            imageUrl: article.imageUrl,
-            publishedAt: new Date()
-          });
-          await newArticle.save();
-          savedCount++;
+        try {
+          // Use updateOne with upsert instead of insertOne to handle duplicates
+          const result = await Article.updateOne(
+            { url: article.url }, // Find by URL
+            { // Update or insert data
+              interest,
+              title: article.title,
+              source: article.source,
+              url: article.url,
+              content: article.content,
+              imageUrl: article.imageUrl,
+              publishedAt: article.publishedAt || new Date()
+            },
+            { upsert: true } // Create if doesn't exist
+          );
+          
+          // If it was a new document (not an update)
+          if (result.upsertedCount > 0) {
+            savedCount++;
+          }
+        } catch (articleError) {
+          console.error(`Error saving article "${article.title}":`, articleError.message);
+          // Continue with next article
         }
       }
 

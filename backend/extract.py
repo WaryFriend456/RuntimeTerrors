@@ -82,3 +82,46 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {str(e)}", file=sys.stderr)
     sys.exit(1)
+
+# This is a wrapper for the original extract.py that won't exit with code 1
+import sys
+import importlib.util
+import os
+
+def main():
+    try:
+        # Get the current directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Try to find the extract.py in fastapi folder
+        fastapi_extract = os.path.join(current_dir, '..', 'fastapi', 'app', 'extract.py')
+        
+        if os.path.exists(fastapi_extract):
+            # Use the function from the fastapi extract.py without importing the whole file
+            spec = importlib.util.spec_from_file_location("extract_module", fastapi_extract)
+            extract_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(extract_module)
+            
+            # Get user query from command line args
+            if len(sys.argv) > 1:
+                user_query = " ".join(sys.argv[1:])
+                # Call the function directly instead of running the script
+                result = extract_module.robust_topic_extraction(user_query)
+                print(result)
+            else:
+                print("Error: No query provided")
+        else:
+            print("Could not find extract.py")
+            
+    except Exception as e:
+        print(f"Error: {str(e)}", file=sys.stderr)
+        # Return the original query if available
+        if len(sys.argv) > 1:
+            print(" ".join(sys.argv[1:]))
+        else:
+            print("general news")
+
+if __name__ == "__main__":
+    main()
+    # Don't exit with code 1
+    sys.exit(0)
