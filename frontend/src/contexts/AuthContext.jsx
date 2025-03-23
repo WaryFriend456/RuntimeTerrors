@@ -1,26 +1,33 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
+
+// API base URL - remove /api since we'll include that in individual requests
+const API_BASE_URL = 'http://localhost:3000'; 
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
+  // Configure axios defaults
+  axios.defaults.baseURL = API_BASE_URL;
+
   useEffect(() => {
     // Check if token exists in localStorage on initial load
     const checkToken = async () => {
       try {
         if (token) {
-          const response = await fetch('http://localhost:3000/api/user', {
+          // Use axios instead of fetch for consistency
+          const response = await axios.get('/api/auth/user', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           });
 
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
+          if (response.status === 200) {
+            setUser(response.data);
           } else {
             // If token is invalid, clear it
             logout();
@@ -39,53 +46,68 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
+      const response = await axios.post('/api/auth/login', { 
+        email, 
+        password 
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // Save token and user data
-      localStorage.setItem('token', data.token);
-      setToken(data.token);
-      setUser(data.user);
+      // Save token and user data (including interests)
+      localStorage.setItem('token', response.data.token);
+      setToken(response.data.token);
+      setUser(response.data.user);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Login failed. Please check your server connection.' 
+      };
     }
   };
 
   const register = async (name, email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name, email, password })
+      const response = await axios.post('/api/auth/register', {
+        name,
+        email,
+        password
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Save token and user data
-      localStorage.setItem('token', data.token);
-      setToken(data.token);
-      setUser(data.user);
-      return { success: true };
+      // Save token and user data (including interests)
+      localStorage.setItem('token', response.data.token);
+      setToken(response.data.token);
+      setUser(response.data.user);
+      return { success: true, user: response.data.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Registration error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Registration failed. Please check your server connection.' 
+      };
+    }
+  };
+
+  const updateUserInterests = async (interests) => {
+    try {
+      const response = await axios.put('/api/auth/user/interests', 
+        { interests }, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      // Update the user object with new interests
+      setUser(prev => ({
+        ...prev,
+        interests: response.data.interests
+      }));
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating interests:', error);
+      throw error;
     }
   };
 
@@ -97,7 +119,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUserInterests }}>
       {children}
     </AuthContext.Provider>
   );

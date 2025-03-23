@@ -24,6 +24,11 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // Check if all required fields are provided
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -34,11 +39,16 @@ router.post('/register', async (req, res) => {
     const newUser = await User.create({
       name,
       email,
-      password
+      password,
+      interests: [] // Initialize with empty interests array
     });
 
-    // Create JWT token
-    const token = jwt.sign({ id: newUser._id, email: newUser.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    // Create JWT token with interests included
+    const token = jwt.sign({ 
+      id: newUser._id, 
+      email: newUser.email,
+      interests: newUser.interests 
+    }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -46,10 +56,12 @@ router.post('/register', async (req, res) => {
       user: {
         id: newUser._id,
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        interests: newUser.interests
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -70,8 +82,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    // Create JWT token with interests included
+    const token = jwt.sign({ 
+      id: user._id, 
+      email: user.email,
+      interests: user.interests 
+    }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.json({
       message: 'Login successful',
@@ -79,7 +95,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        interests: user.interests
       }
     });
   } catch (error) {
@@ -96,10 +113,38 @@ router.get('/user', authenticateToken, async (req, res) => {
     res.json({
       id: user._id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      interests: user.interests
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Add this endpoint to your auth routes file
+
+router.put('/user/interests', authenticateToken, async (req, res) => {
+  try {
+    const { interests } = req.body;
+    
+    if (!interests || !Array.isArray(interests)) {
+      return res.status(400).json({ message: 'Interests must be an array' });
+    }
+    
+    // Update user interests
+    const user = await User.findByIdAndUpdate(
+      req.user.id, 
+      { interests }, 
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    res.json({ 
+      success: true, 
+      interests: user.interests 
+    });
+  } catch (error) {
+    console.error('Update interests error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

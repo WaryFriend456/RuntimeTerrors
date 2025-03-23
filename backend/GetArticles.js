@@ -3,6 +3,8 @@ const axios = require('axios');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
 // const readlineSync = require('readline-sync');
+const dotenv = require('dotenv');
+dotenv.config(); // Load environment variables from .env file
 
 const API_KEY = process.env.NEWS_API_KEY; // Your GNews API key
 
@@ -67,15 +69,16 @@ async function GetArticles(topic) {
     // Clean up extra whitespace and newlines in the text content
     const cleanedContent = articleData.textContent.replace(/[\s\n]+/g, ' ').trim();
     results.push({
+      interest: topic, // Add the interest/topic to the result
       title: article.title,
       source: article.source.name,
       url: article.url,
       content: cleanedContent,
-      imageUrl: articleData.imageUrl
+      imageUrl: articleData.imageUrl || article.image, // Use article image as fallback
+      publishedAt: article.publishedAt || new Date() // Use current date as fallback
     });
   }
   return results;
 }
-
 
 module.exports = GetArticles;

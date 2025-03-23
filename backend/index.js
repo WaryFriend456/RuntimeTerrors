@@ -4,7 +4,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+
+// Route imports
 const authRoutes = require('./routes/auth');
+const articleRoutes = require('./routes/articles');
 
 // Create Express app
 const app = express();
@@ -15,8 +18,9 @@ app.use(cors());
 // Parse JSON bodies
 app.use(express.json());
 
-// Routes
-app.use('/api', authRoutes);
+// Route middleware
+app.use('/api/auth', authRoutes);
+app.use('/api/articles', articleRoutes);
 
 // Default route
 app.get('/', (req, res) => {

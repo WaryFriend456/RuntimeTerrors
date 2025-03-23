@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide a password'],
     minlength: 6
   },
+  interests: {
+    type: [String],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now

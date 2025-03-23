@@ -9,6 +9,7 @@ import { Mail, Lock, User } from "lucide-react"
 import { MotionCard, MotionCardContent, MotionCardHeader } from "@/components/motion/motion-card"
 import { motion } from "framer-motion"
 import { useAuth } from '@/contexts/AuthContext'
+import { toast } from 'sonner'
 
 const LoginSignup = () => {
   const navigate = useNavigate()
@@ -43,19 +44,88 @@ const LoginSignup = () => {
     }))
   }
 
+  // Validation functions
+  const validateLogin = (data) => {
+    if (!data.email || !data.email.trim()) {
+      toast.error('Email is required')
+      return false
+    }
+    
+    if (!data.password) {
+      toast.error('Password is required')
+      return false
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(data.email)) {
+      toast.error('Please enter a valid email address')
+      return false
+    }
+    
+    return true
+  }
+
+  const validateSignup = (data) => {
+    if (!data.name || !data.name.trim()) {
+      toast.error('Name is required')
+      return false
+    }
+    
+    if (!data.email || !data.email.trim()) {
+      toast.error('Email is required')
+      return false
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(data.email)) {
+      toast.error('Please enter a valid email address')
+      return false
+    }
+    
+    if (!data.password) {
+      toast.error('Password is required')
+      return false
+    }
+    
+    if (data.password.length < 8) {
+      toast.error('Password must be at least 8 characters long')
+      return false
+    }
+    
+    // Check for at least one number and one special character
+    const hasNumber = /\d/.test(data.password)
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(data.password)
+    
+    if (!hasNumber || !hasSpecial) {
+      toast.error('Password must contain at least one number and one special character')
+      return false
+    }
+    
+    return true
+  }
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate form before submission
+    if (!validateLogin(loginData)) {
+      return
+    }
+    
     setIsLoading(true)
     setError('')
     
     try {
       const result = await login(loginData.email, loginData.password)
       if (result.success) {
+        toast.success('Login successful!')
         navigate('/dashboard')
       } else {
+        toast.error(result.error || 'Login failed')
         setError(result.error || 'Login failed')
       }
     } catch (err) {
+      toast.error('An unexpected error occurred')
       setError('An unexpected error occurred')
       console.error(err)
     } finally {
@@ -64,24 +134,77 @@ const LoginSignup = () => {
   }
 
   const handleSignupSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+    e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateSignup(signupData)) {
+      return
+    }
     
     try {
-      const result = await register(signupData.name, signupData.email, signupData.password)
+      setIsLoading(true);
+      const result = await register(signupData.name, signupData.email, signupData.password);
+      
       if (result.success) {
-        navigate('/dashboard')
+        toast.success('Account created successfully!')
+        // Redirect to interests selection page after successful registration
+        navigate('/interests');
       } else {
-        setError(result.error || 'Registration failed')
+        // Handle specific server error cases
+        if (result.error?.includes('email already exists')) {
+          toast.error('This email is already registered. Please login instead.')
+        } else {
+          toast.error(result.error || 'Registration failed')
+        }
+        setError(result.error || 'Registration failed');
       }
-    } catch (err) {
-      setError('An unexpected error occurred')
-      console.error(err)
+    } catch (error) {
+      toast.error(error.message || 'Something went wrong during signup')
+      setError(error.message || 'Something went wrong during signup');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
+  };
+
+  // Password strength indicator
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, text: '' };
+    
+    let strength = 0;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength += 1;
+    
+    let text = '';
+    let color = '';
+    
+    switch(strength) {
+      case 0:
+      case 1:
+        text = 'Weak';
+        color = 'bg-red-500';
+        break;
+      case 2:
+        text = 'Fair';
+        color = 'bg-yellow-500';
+        break;
+      case 3:
+        text = 'Good';
+        color = 'bg-blue-500';
+        break;
+      case 4:
+        text = 'Strong';
+        color = 'bg-green-500';
+        break;
+      default:
+        text = '';
+    }
+    
+    return { strength, text, color };
   }
+  
+  const passwordStrength = getPasswordStrength(signupData.password);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -109,6 +232,8 @@ const LoginSignup = () => {
           </motion.p>
         </MotionCardHeader>
         <MotionCardContent>
+          {/* Error messages now handled by toast, but keeping the error div
+             for accessibility or if you want to display persistent errors */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative">
               {error}
@@ -221,6 +346,30 @@ const LoginSignup = () => {
                       required
                     />
                   </div>
+                  {signupData.password && (
+                    <div className="mt-1">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Password strength: {passwordStrength.text}</span>
+                      </div>
+                      <div className="h-1 w-full bg-gray-200 rounded-full">
+                        <div 
+                          className={`h-1 rounded-full ${passwordStrength.color}`} 
+                          style={{ width: `${(passwordStrength.strength / 4) * 100}%` }}
+                        ></div>
+                      </div>
+                      <ul className="text-xs text-gray-500 mt-1 space-y-1">
+                        <li className={signupData.password.length >= 8 ? "text-green-500" : ""}>
+                          • At least 8 characters
+                        </li>
+                        <li className={/[0-9]/.test(signupData.password) ? "text-green-500" : ""}>
+                          • At least one number
+                        </li>
+                        <li className={/[!@#$%^&*(),.?":{}|<>]/.test(signupData.password) ? "text-green-500" : ""}>
+                          • At least one special character
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>

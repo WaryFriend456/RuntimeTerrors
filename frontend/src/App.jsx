@@ -12,6 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './components/views/Dashboard';
 import Profile from './components/views/Profile';
 import About from './components/views/About';
+import UserInterests from '@/components/views/UserInterests'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/interests" element={<UserInterests />} />
               </Route>
               
               {/* Redirect root to dashboard or login based on auth status */}
