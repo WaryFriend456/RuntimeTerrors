@@ -33,12 +33,15 @@ async function extractArticleContent(url) {
       const metaImage = dom.window.document.querySelector('meta[property="og:image"]');
       const imgElement = dom.window.document.querySelector('img');
       const imageUrl = (metaImage && metaImage.getAttribute("content")) || (imgElement && imgElement.src) || null;
-      return { textContent: article.textContent, imageUrl };
+      // Get publishedAt content from meta tag instead of the element itself
+      const publishedAtElement = dom.window.document.querySelector('meta[property="article:published_time"]');
+      const publishedAt = publishedAtElement ? publishedAtElement.getAttribute("content") : null;
+      return { textContent: article.textContent, imageUrl, publishedAt };
     }
-    return { textContent: 'Content could not be extracted.', imageUrl: null };
+    return { textContent: 'Content could not be extracted.', imageUrl: null, publishedAt: null };
   } catch (error) {
     console.error('Error fetching full article content:', error.message);
-    return { textContent: 'Content could not be extracted.', imageUrl: null };
+    return { textContent: 'Content could not be extracted.', imageUrl: null, publishedAt: null };
   }
 }
 
@@ -73,6 +76,7 @@ async function GetArticles(topic) {
       title: article.title,
       source: article.source.name,
       url: article.url,
+      publishedAt: articleData.publishedAt,
       content: cleanedContent,
       imageUrl: articleData.imageUrl || article.image, // Use article image as fallback
       publishedAt: article.publishedAt || new Date() // Use current date as fallback
