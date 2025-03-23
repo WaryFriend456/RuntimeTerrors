@@ -103,10 +103,12 @@ router.post('/refresh', authenticateToken, async (req, res) => {
     }
 
     const results = {};
+    console.log('User interests:', user.interests);
     
     // Process each interest
     for (const interest of user.interests) {
       // Fetch fresh articles from the API
+      console.log(interest);
       const newArticles = await GetArticles(interest);
       
       if (!newArticles || newArticles === 'no articles found.') {

@@ -29,7 +29,7 @@ export default function Dashboard() {
     const fetchArticles = async () => {
         try {
             setLoading(true);
-
+            console.log("Fetching articles...");
             // Refresh articles - this will fetch new ones and store in DB
             const refreshResponse = await axios.post('/api/articles/refresh', {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -39,6 +39,7 @@ export default function Dashboard() {
                 setNews(refreshResponse.data.articles);
             } else {
                 // If no articles returned in refresh, fetch existing ones
+                console.log("NO NEW ARTICLES");
                 const articlesResponse = await axios.get('/api/articles', {
                     headers: { Authorization: `Bearer ${token}` }
                 });

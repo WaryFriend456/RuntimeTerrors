@@ -21,9 +21,9 @@ async function fetchArticles(params, retries = 3, timeout = 10000) {
     if (retries > 0) {
       console.log(`Retrying API call. Attempts remaining: ${retries-1}`);
       // Wait for a short time before retrying (exponential backoff)
-      const delay = 2000 * (3 - retries + 1);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchArticles(params, retries - 1, timeout);
+      // const delay = 2000 * (3 - retries + 1);
+      // await new Promise(resolve => setTimeout(resolve, delay));
+      // return fetchArticles(params, retries - 1, timeout);
     }
     
     // Categorize the error for better debugging
@@ -90,17 +90,17 @@ async function GetArticles(topic) {
   // First try with random page
   let articles = await attemptFetch('in', Math.floor(Math.random() * 5) + 1);
   
-  // If no articles found, try without page parameter
-  if (articles.length === 0) {
-    console.log('No articles found with random page. Trying without page parameter...');
-    articles = await attemptFetch('in', null);
-  }
+  // // If no articles found, try without page parameter
+  // if (articles.length === 0) {
+  //   console.log('No articles found with random page. Trying without page parameter...');
+  //   articles = await attemptFetch('in', null);
+  // }
   
-  // If still no articles, try without country restriction
-  if (articles.length === 0) {
-    console.log('No articles found for India. Trying without country restriction...');
-    articles = await attemptFetch(null, null);
-  }
+  // // If still no articles, try without country restriction
+  // if (articles.length === 0) {
+  //   console.log('No articles found for India. Trying without country restriction...');
+  //   articles = await attemptFetch(null, null);
+  // }
 
   if (articles.length === 0) {
     console.log('No articles found after multiple attempts.');

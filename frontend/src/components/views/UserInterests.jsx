@@ -41,7 +41,7 @@ const UserInterests = () => {
       const result = await updateUserInterests(selectedInterests)
       toast.success('Interests saved successfully!')
       navigate('/dashboard', { replace: true }) // Added replace:true for a cleaner navigation history
-      navigate('/dashboard');
+      // navigate('/dashboard');
     } catch (error) {
       toast.error(error.message || 'Failed to save interests')
     } finally {
