@@ -1,9 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
 import uvicorn
+from .model import summarise_text
 
 # Create FastAPI app
-app = FastAPI(title="FastAPI App")
+app = FastAPI(
+    title="Article Summarization API",
+    description="API for summarizing articles using an AI model",
+    version="1.0.0"
+)
 
 # Configure CORS
 origins = [
@@ -21,6 +28,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ArticleSummaryRequest(BaseModel):
+    articles: List[str]
+    domain: Optional[str] = ""
+
+class ArticleSummaryResponse(BaseModel):
+    summary: str
+
+@app.post("/summarize", response_model=ArticleSummaryResponse)
+async def summarize_articles(request: ArticleSummaryRequest):
+    try:
+        # Join the list of articles
+        aggregated_articles = "\n\n".join(request.articles)
+        
+        # Call the summarization function
+        summary = summarise_text(aggregated_articles, request.domain)
+        
+        return ArticleSummaryResponse(summary=summary)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during summarization: {str(e)}")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 # Root endpoint
 @app.get("/")
