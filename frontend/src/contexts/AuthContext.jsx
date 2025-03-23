@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      setLoading(true);
       const response = await axios.post('/api/auth/login', { 
         email, 
         password 
@@ -55,9 +56,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', response.data.token);
       setToken(response.data.token);
       setUser(response.data.user);
+      setLoading(false);
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
+      setLoading(false);
       return { 
         success: false, 
         error: error.response?.data?.message || 'Login failed. Please check your server connection.' 
@@ -67,6 +70,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
+      setLoading(true);
       const response = await axios.post('/api/auth/register', {
         name,
         email,
@@ -77,9 +81,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', response.data.token);
       setToken(response.data.token);
       setUser(response.data.user);
+      setLoading(false);
       return { success: true, user: response.data.user };
     } catch (error) {
       console.error('Registration error:', error);
+      setLoading(false);
       return { 
         success: false, 
         error: error.response?.data?.message || 'Registration failed. Please check your server connection.' 

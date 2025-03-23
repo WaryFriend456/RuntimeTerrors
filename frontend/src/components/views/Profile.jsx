@@ -1,245 +1,344 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, SettingsIcon, UserIcon, BookmarkIcon, LogOutIcon, PencilIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { CalendarIcon, SettingsIcon, UserIcon, BookmarkIcon, LogOutIcon, NewspaperIcon, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 export default function Profile() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { user, token, logout, updateUserInterests, loading } = useAuth();
     const [activeTab, setActiveTab] = useState("overview");
+    const [isUpdatingInterests, setIsUpdatingInterests] = useState(false);
+    const [selectedInterests, setSelectedInterests] = useState([]);
+    const [readingHistory, setReadingHistory] = useState([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [localLoading, setLocalLoading] = useState(true);
 
-    // Mock user data - replace with actual user data from your state management or API
-    const user = {
-        name: "Alice Johnson",
-        username: "@alice_johnson",
-        bio: "Full-stack developer | Open source contributor | Coffee enthusiast",
-        avatarUrl: "https://api.dicebear.com/6.x/adventurer/svg?seed=Alice",
-        joinDate: "January 2023",
-        location: "San Francisco, CA",
-        followers: 1243,
-        following: 567,
-        projects: 42
+    // Available interest categories
+    const availableInterests = [
+        'Technology', 'Business', 'Science', 'Health', 
+        'Politics', 'Entertainment', 'Sports', 'World'
+    ];
+
+    // Initialize selected interests from user data and handle loading state
+    useEffect(() => {
+        // If auth context is no longer loading and we have user data
+        if (!loading) {
+            if (user && user.interests) {
+                setSelectedInterests(user.interests);
+            }
+            setLocalLoading(false);
+            
+            // If auth is done loading but we don't have a user, redirect to login
+            if (!user && !loading) {
+                navigate('/login');
+            }
+        }
+    }, [user, loading, navigate]);
+
+    // Check if we arrived from login/register and need to fetch data
+    useEffect(() => {
+        const fromAuth = location.state?.fromAuth;
+        if (fromAuth && token) {
+            // Force a reload to ensure all user data is properly loaded
+            window.location.reload();
+        }
+    }, [location, token]);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
+
+    const handleInterestChange = (interest) => {
+        setSelectedInterests(prev => {
+            if (prev.includes(interest)) {
+                return prev.filter(i => i !== interest);
+            } else {
+                return [...prev, interest];
+            }
+        });
+    };
+
+    const handleInterestsSubmit = async () => {
+        if (selectedInterests.length === 0) {
+            toast.error('Please select at least one interest');
+            return;
+        }
+        
+        try {
+            setIsUpdatingInterests(true);
+            await updateUserInterests(selectedInterests);
+            toast.success('Your interests have been updated successfully!');
+        } catch (error) {
+            toast.error('Failed to update interests. Please try again.');
+            console.error('Interest update error:', error);
+        } finally {
+            setIsUpdatingInterests(false);
+        }
+    };
+
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(date);
+    };
+
+    // Get initials for avatar
+    const getInitials = (name) => {
+        if (!name) return "";
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    // Improved loading state check
+    if (loading || localLoading) {
+        return (
+            <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="flex flex-col justify-center items-center h-[calc(100vh-4rem)]">
+                <p className="text-lg mb-4">Session expired or not logged in</p>
+                <Button onClick={() => navigate('/login')}>Go to Login</Button>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-5xl">
-            <div className="mb-8 bg-card rounded-xl overflow-hidden shadow-lg">
+            <motion.div 
+                className="mb-8 bg-card rounded-xl overflow-hidden shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+            >
                 {/* Banner and profile info */}
-                <div className="h-40 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+                <div className="h-40 bg-gradient-to-r from-blue-800 to-violet-800"></div>
                 <div className="relative px-6 pb-6">
-                    <Avatar className="absolute -top-16 border-4 border-background w-32 h-32">
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex justify-end mt-4 mb-6">
-                        <Button variant="outline" size="sm" className="mr-2">
-                            <PencilIcon className="mr-2 h-4 w-4" />
-                            Edit Profile
-                        </Button>
-                        <Button variant="outline" size="sm">
-                            <SettingsIcon className="mr-2 h-4 w-4" />
-                            Settings
-                        </Button>
+                    <div className="absolute -top-16 left-6">
+                        <Avatar className="border-4 border-background w-32 h-32 bg-gradient-to-br from-blue-600 to-violet-600 shadow-lg">
+                            <AvatarFallback className="text-3xl font-bold text-white">
+                                {getInitials(user.name)}
+                            </AvatarFallback>
+                        </Avatar>
                     </div>
                     
-                    <div className="mt-8">
+                    <div className="pt-20 md:pt-0 md:ml-40">
                         <h1 className="text-2xl font-bold">{user.name}</h1>
-                        <p className="text-muted-foreground">{user.username}</p>
-                        <p className="mt-2">{user.bio}</p>
+                        <p className="text-muted-foreground">{user.email}</p>
                         
                         <div className="flex items-center mt-4 text-sm text-muted-foreground">
-                            <UserIcon className="mr-1 h-4 w-4" />
-                            <span className="mr-4">{user.followers} followers · {user.following} following</span>
                             <CalendarIcon className="mr-1 h-4 w-4" />
-                            <span>Joined {user.joinDate}</span>
+                            <span>Member since {formatDate(user.createdAt || new Date())}</span>
                         </div>
                         
-                        <div className="flex gap-2 mt-4">
-                            <Badge variant="secondary">{user.location}</Badge>
-                            <Badge variant="secondary">Developer</Badge>
-                            <Badge variant="secondary">Open to work</Badge>
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            <Badge variant="secondary" className="bg-blue-600/10 text-blue-600 dark:text-blue-400">News Reader</Badge>
+                            {user.interests && user.interests.map(interest => (
+                                <Badge key={interest} variant="outline">{interest}</Badge>
+                            ))}
                         </div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
             
             {/* Tabs section */}
             <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-4 mb-8">
+                <TabsList className="grid grid-cols-3 mb-8">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="projects">Projects</TabsTrigger>
-                    <TabsTrigger value="activity">Activity</TabsTrigger>
-                    <TabsTrigger value="saved">Saved</TabsTrigger>
+                    <TabsTrigger value="interests">My Interests</TabsTrigger>
+                    <TabsTrigger value="settings">Account Settings</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="overview" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>About</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p>
-                                I'm a full-stack developer with 5 years of experience building web applications.
-                                My primary focus is on React, Node.js, and cloud infrastructure. I enjoy 
-                                contributing to open-source projects and mentoring junior developers.
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                                <Card>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-lg">Skills</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="flex flex-wrap gap-2">
-                                        <Badge>JavaScript</Badge>
-                                        <Badge>React</Badge>
-                                        <Badge>Node.js</Badge>
-                                        <Badge>TypeScript</Badge>
-                                        <Badge>AWS</Badge>
-                                        <Badge>GraphQL</Badge>
-                                        <Badge>Tailwind CSS</Badge>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-lg">Stats</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Projects</span>
-                                                <span className="font-medium">{user.projects}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Contributions</span>
-                                                <span className="font-medium">328</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Repositories</span>
-                                                <span className="font-medium">64</span>
-                                            </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <NewspaperIcon className="h-5 w-5 text-blue-500" />
+                                    Your News Profile
+                                </CardTitle>
+                                <CardDescription>Your personalized news preferences and activity</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-2">Your Interests</h3>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {user.interests && user.interests.length > 0 ? (
+                                                user.interests.map(interest => (
+                                                    <Badge key={interest}>{interest}</Badge>
+                                                ))
+                                            ) : (
+                                                <p className="text-muted-foreground text-sm">No interests selected yet. Add some to personalize your news feed!</p>
+                                            )}
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>Your last 3 activities</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="border-b pb-4 last:border-0 last:pb-0">
-                                        <div className="flex justify-between">
-                                            <span className="font-medium">Updated profile README</span>
-                                            <span className="text-sm text-muted-foreground">2 days ago</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            Added new project information and skills section
-                                        </p>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => setActiveTab("interests")}
+                                        >
+                                            Update Interests
+                                        </Button>
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button variant="ghost" size="sm" className="w-full">
-                                View all activity
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-                
-                <TabsContent value="projects" className="space-y-4">
-                    <div className="flex justify-between mb-4">
-                        <h2 className="text-xl font-bold">Projects ({user.projects})</h2>
-                        <Button>New Project</Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <Card key={i} className="overflow-hidden">
-                                <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-700"></div>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg">Project {i}</CardTitle>
-                                    <CardDescription>A brief description of this project</CardDescription>
-                                </CardHeader>
-                                <CardContent className="text-sm text-muted-foreground">
-                                    <p>Last updated 2 weeks ago</p>
-                                </CardContent>
-                                <CardFooter className="flex justify-between">
-                                    <Button variant="ghost" size="sm">View</Button>
-                                    <Button variant="outline" size="sm">
-                                        <BookmarkIcon className="h-4 w-4" />
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                </TabsContent>
-                
-                <TabsContent value="activity">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Activity Feed</CardTitle>
-                            <CardDescription>Your recent activities across projects</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-8">
-                                {[1, 2, 3, 4, 5].map((i) => (
-                                    <div key={i} className="flex gap-4 border-b pb-6 last:border-0">
-                                        <Avatar className="w-10 h-10">
-                                            <AvatarImage src={user.avatarUrl} />
-                                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <div className="flex items-baseline">
-                                                <h4 className="font-semibold mr-2">Activity {i}</h4>
-                                                <span className="text-sm text-muted-foreground">{i} day{i !== 1 ? 's' : ''} ago</span>
-                                            </div>
-                                            <p className="mt-1">Made updates to the project documentation and fixed several bugs in the UI components.</p>
-                                            <div className="mt-2">
-                                                <Badge variant="outline">Project {i}</Badge>
-                                            </div>
+                                    
+                                    <div className="pt-4 border-t">
+                                        <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <BookmarkIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                                            <p>Your recent reading activity will appear here</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button variant="outline" className="w-full">Load More</Button>
-                        </CardFooter>
-                    </Card>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </TabsContent>
                 
-                <TabsContent value="saved">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Saved Items</CardTitle>
-                            <CardDescription>Projects and posts you've bookmarked</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-center py-12 text-muted-foreground">
-                                <BookmarkIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                                <h3 className="text-lg font-medium mb-2">No saved items yet</h3>
-                                <p>Bookmarks you add will appear here</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                <TabsContent value="interests">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Update Your Interests</CardTitle>
+                                <CardDescription>Select categories to personalize your news feed</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                                    {availableInterests.map((interest) => (
+                                        <div key={interest} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`interest-${interest}`}
+                                                checked={selectedInterests.includes(interest)}
+                                                onCheckedChange={() => handleInterestChange(interest)}
+                                            />
+                                            <Label 
+                                                htmlFor={`interest-${interest}`}
+                                                className="cursor-pointer"
+                                            >
+                                                {interest}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="text-sm text-muted-foreground mb-6">
+                                    Selecting your interests helps us curate news articles that match your preferences. 
+                                    You can change these anytime.
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-end gap-3">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setSelectedInterests(user.interests || [])}
+                                    disabled={isUpdatingInterests}
+                                >
+                                    Reset
+                                </Button>
+                                <Button 
+                                    onClick={handleInterestsSubmit}
+                                    disabled={isUpdatingInterests || selectedInterests.length === 0}
+                                >
+                                    {isUpdatingInterests ? (
+                                        <>
+                                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                            Updating...
+                                        </>
+                                    ) : 'Save Interests'}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </motion.div>
+                </TabsContent>
+                
+                <TabsContent value="settings">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Account Settings</CardTitle>
+                                <CardDescription>Manage your account preferences</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-1">
+                                    <Label className="text-base">Email</Label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-muted rounded text-sm flex-grow">
+                                            {user.email}
+                                        </div>
+                                        <Button variant="outline" size="sm" disabled>Change</Button>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                    <Label className="text-base">Password</Label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-muted rounded text-sm flex-grow">
+                                            ••••••••
+                                        </div>
+                                        <Button variant="outline" size="sm" disabled>Change</Button>
+                                    </div>
+                                </div>
+                                
+                                <div className="pt-6 border-t mt-6">
+                                    <h3 className="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        These actions cannot be undone. Please be certain.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm"
+                                            disabled
+                                        >
+                                            Delete Account
+                                        </Button>
+                                        
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="text-destructive border-destructive/30"
+                                            onClick={handleLogout}
+                                        >
+                                            <LogOutIcon className="mr-2 h-4 w-4" />
+                                            Sign Out
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </TabsContent>
             </Tabs>
-            
-            {/* Account actions */}
-            <div className="mt-12 flex justify-end">
-                <Button variant="outline" size="sm" className="text-destructive">
-                    <LogOutIcon className="mr-2 h-4 w-4" />
-                    Sign Out
-                </Button>
-            </div>
         </div>
     );
 }

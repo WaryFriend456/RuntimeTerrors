@@ -6,11 +6,11 @@ const api = axios.create();
 // Add a request interceptor
 api.interceptors.request.use(
   config => {
-    console.log(`REQUEST: ${config.method.toUpperCase()} ${config.url}`, config);
+    console.log(`curateAI REQUEST: ${config.method.toUpperCase()} ${config.url}`, config);
     return config;
   },
   error => {
-    console.error('Request error:', error);
+    console.error('curateAI Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -18,11 +18,11 @@ api.interceptors.request.use(
 // Add a response interceptor
 api.interceptors.response.use(
   response => {
-    console.log(`RESPONSE: ${response.status} from ${response.config.url}`, response.data);
+    console.log(`curateAI RESPONSE: ${response.status} from ${response.config.url}`, response.data);
     return response;
   },
   error => {
-    console.error('Response error:', error.response || error);
+    console.error('curateAI Response error:', error.response || error);
     return Promise.reject(error);
   }
 );

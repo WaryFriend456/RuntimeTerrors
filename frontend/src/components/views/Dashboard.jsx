@@ -160,11 +160,11 @@ function NewsCard({ article }) {
             <CardContent className="p-0">
                 <div className="flex flex-col h-full">
                     {article.imageUrl && (
-                        <div className="h-48 overflow-hidden">
+                        <div className="aspect-video relative overflow-hidden">
                             <img 
                                 src={article.imageUrl} 
                                 alt={article.title} 
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover absolute inset-0"
                                 onError={(e) => {
                                     e.target.src = "https://via.placeholder.com/640x360?text=No+Image";
                                 }}
@@ -233,11 +233,11 @@ function TopStoryCard({ article }) {
                         </div>
                     </div>
                     {article.imageUrl && (
-                        <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32">
+                        <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 relative rounded-md overflow-hidden">
                             <img 
                                 src={article.imageUrl} 
                                 alt={article.title} 
-                                className="w-full h-full object-cover rounded-md"
+                                className="w-full h-full object-cover absolute inset-0"
                                 onError={(e) => {
                                     e.target.src = "https://via.placeholder.com/300x200?text=No+Image";
                                 }}
@@ -254,7 +254,7 @@ function NewsCardSkeleton() {
     return (
         <Card className="overflow-hidden">
             <CardContent className="p-0">
-                <Skeleton className="h-48 w-full" />
+                <Skeleton className="aspect-video w-full" />
                 <div className="p-4">
                     <div className="flex items-center mb-2">
                         <Skeleton className="h-6 w-6 rounded-full mr-2" />
