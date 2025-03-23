@@ -47,7 +47,7 @@ async def summarize_articles(request: ArticleSummaryRequest):
         summary = summarise_text(aggregated_articles, request.domain)
         print(f"Summary: {summary}")
         
-        return ArticleSummaryResponse(summary=summary)
+        return {"summary" : summary}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during summarization: {str(e)}")
 

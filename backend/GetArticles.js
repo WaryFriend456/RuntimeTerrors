@@ -66,7 +66,7 @@ async function extractArticleContent(url, timeout = 10000) {
 
 // Main function to run the script
 async function GetArticles(topic) {
-  const maxArticles = 10; // Default to 10 articles
+  const maxArticles = 4; // Default to 10 articles
   
   // Try different API parameters if initial query fails
   const attemptFetch = async (countryCode = 'in', pageNum = null) => {

@@ -8,7 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, SettingsIcon, UserIcon, BookmarkIcon, LogOutIcon, NewspaperIcon, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, SettingsIcon, UserIcon, BookmarkIcon, LogOutIcon, NewspaperIcon, RefreshCw, MessageSquareIcon } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -23,6 +26,12 @@ export default function Profile() {
     const [readingHistory, setReadingHistory] = useState([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [localLoading, setLocalLoading] = useState(true);
+    
+    // Feedback form state
+    const [feedbackType, setFeedbackType] = useState("suggestion");
+    const [feedbackText, setFeedbackText] = useState("");
+    const [feedbackRating, setFeedbackRating] = useState("5");
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
     // Available interest categories
     const availableInterests = [
@@ -123,6 +132,36 @@ export default function Profile() {
         );
     }
 
+    // Handle feedback submission (frontend-only)
+    const handleFeedbackSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!feedbackText.trim()) {
+            toast.error("Please enter your feedback");
+            return;
+        }
+        
+        try {
+            setIsSubmittingFeedback(true);
+            
+            // Simulate API call with a timeout
+            setTimeout(() => {
+                // No actual API call, just show success message
+                toast.success("Thank you for your feedback!");
+                
+                // Clear the form
+                setFeedbackText("");
+                setFeedbackRating("5");
+                setFeedbackType("suggestion");
+                setIsSubmittingFeedback(false);
+            }, 1000);
+            
+        } catch (error) {
+            setIsSubmittingFeedback(false);
+            toast.error("Something went wrong. Please try again.");
+        }
+    };
+
     return (
         <div className="container mx-auto py-8 px-4 max-w-5xl">
             <motion.div 
@@ -163,9 +202,10 @@ export default function Profile() {
             
             {/* Tabs section */}
             <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3 mb-8">
+                <TabsList className="grid grid-cols-4 mb-8">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="interests">My Interests</TabsTrigger>
+                    <TabsTrigger value="feedback">Feedback</TabsTrigger>
                     <TabsTrigger value="settings">Account Settings</TabsTrigger>
                 </TabsList>
                 
@@ -334,6 +374,93 @@ export default function Profile() {
                                         </Button>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </TabsContent>
+
+                {/* New Feedback Tab */}
+                <TabsContent value="feedback">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MessageSquareIcon className="h-5 w-5 text-blue-500" />
+                                    Share Your Feedback
+                                </CardTitle>
+                                <CardDescription>
+                                    Your feedback helps us improve our service. Let us know what you think!
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="feedback-type">Feedback Type</Label>
+                                        <Select 
+                                            value={feedbackType} 
+                                            onValueChange={setFeedbackType}
+                                        >
+                                            <SelectTrigger id="feedback-type">
+                                                <SelectValue placeholder="Select feedback type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="suggestion">Suggestion</SelectItem>
+                                                <SelectItem value="bug">Bug Report</SelectItem>
+                                                <SelectItem value="praise">Praise</SelectItem>
+                                                <SelectItem value="complaint">Complaint</SelectItem>
+                                                <SelectItem value="other">Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label htmlFor="feedback-rating">Rating</Label>
+                                        <Select 
+                                            value={feedbackRating} 
+                                            onValueChange={setFeedbackRating}
+                                        >
+                                            <SelectTrigger id="feedback-rating">
+                                                <SelectValue placeholder="Select rating" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 - Poor</SelectItem>
+                                                <SelectItem value="2">2 - Fair</SelectItem>
+                                                <SelectItem value="3">3 - Average</SelectItem>
+                                                <SelectItem value="4">4 - Good</SelectItem>
+                                                <SelectItem value="5">5 - Excellent</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label htmlFor="feedback-text">Your Feedback</Label>
+                                        <Textarea
+                                            id="feedback-text"
+                                            placeholder="Tell us what you think..."
+                                            value={feedbackText}
+                                            onChange={(e) => setFeedbackText(e.target.value)}
+                                            rows={5}
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    <Button 
+                                        type="submit" 
+                                        className="w-full"
+                                        disabled={isSubmittingFeedback}
+                                    >
+                                        {isSubmittingFeedback ? (
+                                            <>
+                                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                                Submitting...
+                                            </>
+                                        ) : 'Submit Feedback'}
+                                    </Button>
+                                </form>
                             </CardContent>
                         </Card>
                     </motion.div>

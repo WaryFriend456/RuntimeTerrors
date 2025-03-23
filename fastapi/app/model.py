@@ -7,7 +7,7 @@ load_dotenv()
 
 token = os.getenv("GITHUB_TOKEN")
 endpoint = "https://models.inference.ai.azure.com"
-model_name = "o3-mini"
+model_name = "gpt-4o"
 
 client = OpenAI(
     base_url=endpoint,
@@ -55,7 +55,6 @@ Edge Cases:
 Final Note:
 Your goal is to provide a clear, concise summary that begins directly with the main topic and encapsulates the core message and most impactful points from the articles.
 """
-    
     # Add domain information to the prompt if available
     if domain:
         user_content = f"Please provide a concise summary of the given articles about {domain}."
@@ -67,12 +66,13 @@ Your goal is to provide a clear, concise summary that begins directly with the m
         {"role": "system", "content": articles},
         {"role": "user", "content": user_content}
     ]
+    print(articles)
     response = client.chat.completions.create(
         messages=messages,
-        model=model_name,
+        model=model_name
     )
     
-    print(response.choices[0].message.content)
+    # print(response.choices[0].message.content)
     return response.choices[0].message.content
 
 def fetch_articles_and_domain():

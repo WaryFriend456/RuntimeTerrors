@@ -45,31 +45,43 @@ export default function Chatbot() {
         setInput("");
         setLoading(true);
 
-        try {
-            // Call backend API to process query
-            const response = await axios.post(
-                "/api/chatbot/query",
-                { query: userMessage.content },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+        // Add a "thinking" message
+        setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: "Thinking...", isTemporary: true }
+        ]);
 
-            // Add AI response to messages
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: response.data.summary }
-            ]);
-        } catch (error) {
-            console.error("Error processing query:", error);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    content: "Sorry, I encountered an error processing your request. Please try again later."
-                }
-            ]);
-        } finally {
-            setLoading(false);
-        }
+        // Delay processing by 5 seconds
+        setTimeout(async () => {
+            try {
+                // Remove the temporary "thinking" message
+                setMessages((prev) => prev.filter(msg => !msg.isTemporary));
+                
+                // Call backend API for all queries
+                const response = await axios.post(
+                    "/api/chatbot/query",
+                    { query: userMessage.content },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                // Add AI response to messages
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: response.data.summary }
+                ]);
+            } catch (error) {
+                console.error("Error processing query:", error);
+                setMessages((prev) => [
+                    ...prev.filter(msg => !msg.isTemporary),
+                    {
+                        role: "assistant",
+                        content: "Sorry, I encountered an error processing your request. Please try again later."
+                    }
+                ]);
+            } finally {
+                setLoading(false);
+            }
+        }, 5000); // 5 second delay
     };
 
     return (

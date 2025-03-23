@@ -56,27 +56,56 @@ router.post('/query', authenticateToken, async (req, res) => {
 
         // Step 4: Send to FastAPI for summarization with the exact expected structure
         try {
+            // Clean the query string to remove extra spaces
+            const cleanedQuery = query.trim();
+            
             // Format the request data exactly as expected by FastAPI
             const requestData = {
-                articles: articlesContent, // Array of article content strings
-                domain: query // Original user query as the domain
+                articles: articlesContent.map(content => content.trim()), // Trim all article contents
+                domain: cleanedQuery // Use cleaned query
             };
-            
+
             console.log("Sending data to FastAPI:", {
                 articleCount: requestData.articles.length,
-                domain: requestData.domain
+                domain: requestData.domain,
+                // Log first few characters of first article for debugging
+                sampleContent: requestData.articles[0]?.substring(0, 50) + "..."
             });
             
-            const summaryResponse = await axios.post('http://localhost:8000/summarize', requestData);
+            try {
+                const summaryResponse = await axios.post('http://localhost:8000/summarize', requestData, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Add timeout to prevent hanging
+                    timeout: 15000
+                });
 
-            // Return the summarized content
-            return res.json({
-                summary: summaryResponse.data.summary,
-                topics,
-                articleCount: allArticles.length
-            });
-        } catch (summaryError) {
-            console.error("Error getting summary from FastAPI:", summaryError.message);
+                // Return the summarized content
+                return res.json({
+                    summary: summaryResponse.data.summary,
+                    topics,
+                    articleCount: allArticles.length
+                });
+            } catch (summaryError) {
+                console.error("Error details:", summaryError.message);
+                if (summaryError.response) {
+                    console.error("Response status:", summaryError.response.status);
+                    console.error("Response data:", summaryError.response.data);
+                }
+                
+                // Create a basic summary as fallback
+                const fallbackSummary = `I found ${allArticles.length} articles about "${query}". Here are some headlines: ${allArticles.slice(0, 3).map(a => a.title).join("; ")}...`;
+                
+                return res.json({
+                    summary: fallbackSummary,
+                    topics,
+                    articleCount: allArticles.length,
+                    error: "Could not generate detailed summary"
+                });
+            }
+        } catch (error) {
+            console.error("Error getting summary from FastAPI:", error.message);
             // Create a basic summary as fallback
             const fallbackSummary = `I found ${allArticles.length} articles about "${query}". Here are some headlines: ${allArticles.slice(0, 3).map(a => a.title).join("; ")}...`;
             
