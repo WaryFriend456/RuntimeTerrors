@@ -1,84 +1,87 @@
 # extract_keyword.py
 import sys
-import spacy
+import json
+import os
+import openai
 from rake_nltk import Rake
+from dotenv import load_dotenv
+from nltk.corpus import stopwords
 
-# Initialize spaCy and RAKE
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    print("Error: Spacy model 'en_core_web_sm' not found.", file=sys.stderr)
-    print("Please install it using: python -m spacy download en_core_web_sm", file=sys.stderr)
+load_dotenv()
+
+# Use OpenAI API key from environment
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    print("Error: OPENAI_API_KEY not found in environment variables.", file=sys.stderr)
     sys.exit(1)
 
+# Initialize RAKE and stopwords
 rake_extractor = Rake()
+try:
+    stop_words = set(stopwords.words('english'))
+except LookupError:
+    import nltk
+    nltk.download('stopwords')
+    stop_words = set(stopwords.words('english'))
 
-def preprocess_text(text):
-    if not text:
-        return ""
-    return text.lower().strip()
+# AI-based topic extraction
 
-def extract_keywords_spacy(text):
-    doc = nlp(text)
-    entities = [ent.text for ent in doc.ents]
-    noun_chunks = [chunk.text for chunk in doc.noun_chunks]
-    return list(set(entities + noun_chunks))
+def ai_extract_topic(query, openai_api_key):
+    openai.api_key = openai_api_key
+    prompt = (
+        "Extract the main news topic or entity from the following query. "
+        "Respond with a single word or short phrase only.\n\nQuery: " + query + "\nTopic:"
+    )
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that extracts the main news topic or entity from a user query. Respond with a single word or short phrase only."},
+            {"role": "user", "content": query}
+        ],
+        max_tokens=10,
+        temperature=0
+    )
+    topic = response.choices[0].message['content'].strip()
+    return topic
 
-def refine_keywords_with_rake(text):
+def fallback_keyword_extraction(text):
+    # Use RAKE to extract keywords, filter out stopwords
     rake_extractor.extract_keywords_from_text(text)
-    return rake_extractor.get_ranked_phrases()
-
-def combine_keywords(text):
-    spacy_keywords = extract_keywords_spacy(text)
-    rake_keywords = refine_keywords_with_rake(text)
-    combined = list(set(spacy_keywords + rake_keywords))
-    # Filter out some generic stopwords, but allow single-word keywords like 'nvidia'
-    stop_words = {"tell", "about", "please", "me", "what", "is", "the", "latest", "news", "update", "updates"}
-    combined_filtered = []
-    for kw in combined:
+    keywords = rake_extractor.get_ranked_phrases()
+    # Remove stopwords and return the first non-stopword keyword
+    for kw in keywords:
         filtered = " ".join([word for word in kw.split() if word.lower() not in stop_words])
         if filtered:
-            combined_filtered.append(filtered)
-    return combined_filtered
+            return filtered
+    # If nothing found, return the original text
+    return text.strip()
 
 def robust_topic_extraction(user_input):
     if not user_input or not user_input.strip():
         return ""
-    
     try:
-        clean_text = preprocess_text(user_input)
-        keywords = combine_keywords(clean_text)
-        
-        # If no keywords are extracted, refine the query.
-        if not keywords:
-            return user_input.strip()
-        
-        # If only one keyword is present, use it directly.
-        if len(keywords) == 1:
-            return keywords[0]
-        
-        # Otherwise, return the first keyword for simplicity
-        return keywords[0]
+        # Use OpenAI GPT-4o for topic extraction
+        topic = ai_extract_topic(user_input, OPENAI_API_KEY)
+        if topic:
+            return topic
+        # Fallback to keyword extraction if no topic
+        return fallback_keyword_extraction(user_input)
     except Exception as e:
         print(f"Error extracting keywords: {str(e)}", file=sys.stderr)
-        # Return the original input if an error occurs
-        return user_input.strip()
+        return fallback_keyword_extraction(user_input)
 
 if __name__ == "__main__":
     try:
-        # Check for command-line arguments first
         if len(sys.argv) > 1:
             user_query = " ".join(sys.argv[1:])
         else:
-            # Fall back to input if no command-line args
             user_query = input("Enter your news query: ")
-        
         if not user_query or not user_query.strip():
             print("Error: Empty query provided", file=sys.stderr)
             sys.exit(1)
-            
         result = robust_topic_extraction(user_query)
-        print(result)
+        print(f"[Extracted Topic]: {result}", file=sys.stderr)
+        print(json.dumps([result]))
     except Exception as e:
         print(f"An error occurred: {str(e)}", file=sys.stderr)
-    sys.exit(1)
+        sys.exit(1)

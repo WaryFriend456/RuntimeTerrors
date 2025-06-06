@@ -14,7 +14,7 @@ client = OpenAI(
     api_key=token,
 )
 
-def summarise_text(articles, domain=""):
+def summarise_text(articles, domain="", chat_history=None):
     system_prompt = """You are a highly efficient summarization assistant designed to synthesize multiple articles on a specific topic into a direct, concise summary. Your task is to analyze a collection of articles, extract the essential insights, and produce a summary that begins immediately with the topic.
 
 Instructions:
@@ -60,19 +60,21 @@ Your goal is to provide a clear, concise summary that begins directly with the m
         user_content = f"Please provide a concise summary of the given articles about {domain}."
     else:
         user_content = "Please provide a concise summary of the given articles."
-    
+
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "system", "content": articles},
         {"role": "user", "content": user_content}
     ]
+    # If chat_history is provided, prepend the last 10 exchanges (user/bot) to the messages
+    if chat_history:
+        for msg in chat_history[-10:]:
+            messages.insert(-1, {"role": msg["role"], "content": msg["message"]})
     print(articles)
     response = client.chat.completions.create(
         messages=messages,
         model=model_name
     )
-    
-    # print(response.choices[0].message.content)
     return response.choices[0].message.content
 
 def fetch_articles_and_domain():
